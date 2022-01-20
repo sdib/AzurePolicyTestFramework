@@ -20,9 +20,10 @@ pool:
 
 steps:
   - script: |
+      set -eu
+
       wget https://github.com/sdib/AzurePolicyTestFramework/releases/download/v0.0.1/policy-tester.v0.0.1.linux-amd64.zip
       unzip policy-tester.v0.0.1.linux-amd64.zip
-      mv policyTester /usr/bin
       rm policy-tester.v0.0.1.linux-amd64.zip
     displayName: Download Policy Tester 
 
@@ -50,7 +51,7 @@ steps:
         export ARM_TENANT_ID=$tenantId
         export ARM_SUBSCRIPTION_ID=$subscriptionId
         export PATH=$PATH:`go env GOPATH`/bin
-        policyTester -config ./test/ -test.v -test.parallel=10 ${{ parameters.goTestArgs }} 2>&1 | tee testrun.log
+        ./policyTester -config ./test/ -test.v -test.parallel=10 ${{ parameters.goTestArgs }} 2>&1 | tee testrun.log
         cat testrun.log | go-junit-report > report.xml
       addSpnToEnvironment: true
 
