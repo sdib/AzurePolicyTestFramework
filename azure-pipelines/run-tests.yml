@@ -1,0 +1,53 @@
+parameters:
+- name: goTestArgs
+  type: string
+  default: ''
+
+trigger:
+  batch: true
+  branches:
+    include:
+    - master
+
+pr:
+  autoCancel: false
+  branches:
+    include:
+    - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+  - script: |
+      wget https://github.com/sdib/AzurePolicyTestFramework/releases/download/v0.0.1/policy-tester.v0.0.1.linux-amd64.zip
+      unzip policy-tester.v0.0.1.linux-amd64.zip
+      mv policyTester /user/bin/policyTester
+      rm policy-tester.v0.0.1.linux-amd64.zip
+    displayName: Download Policy Tester 
+
+  - task: AzureCLI@2
+    displayName: Run tests
+    inputs:
+      azureSubscription: 'policy-testing'
+      scriptType: 'bash'
+      scriptLocation: 'inlineScript'
+      inlineScript: |
+        set -eu
+        subscriptionId=$(az account show --query id -o tsv)
+        export ARM_CLIENT_ID=$servicePrincipalId
+        export ARM_CLIENT_SECRET=$servicePrincipalKey
+        export ARM_TENANT_ID=$tenantId
+        export ARM_SUBSCRIPTION_ID=$subscriptionId
+        export PATH=$PATH:`go env GOPATH`/bin
+        policyTester -config ./test/ -test.v -test.parallel=10 ${{ parameters.goTestArgs }} 2>&1 | tee testrun.log
+        cat testrun.log | go-junit-report > report.xml
+      addSpnToEnvironment: true
+
+  - task: PublishTestResults@2
+    inputs:
+      testResultsFormat: 'JUnit'
+      testResultsFiles: '**/report.xml'
+      failTaskOnFailedTests: true
+      testRunTitle: Policies Tests
+    displayName: "Publish Test Results"
