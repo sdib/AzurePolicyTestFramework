@@ -22,9 +22,19 @@ steps:
   - script: |
       wget https://github.com/sdib/AzurePolicyTestFramework/releases/download/v0.0.1/policy-tester.v0.0.1.linux-amd64.zip
       unzip policy-tester.v0.0.1.linux-amd64.zip
-      mv policyTester /user/bin/policyTester
+      mv policyTester /usr/bin
       rm policy-tester.v0.0.1.linux-amd64.zip
     displayName: Download Policy Tester 
+
+  - task: GoTool@0
+    inputs:
+      version: '1.17'
+
+  - task: Go@0
+    inputs:
+      command: 'get'
+      arguments: '-v -u github.com/jstemmer/go-junit-report'
+    displayName: 'Go get go-junit-report'
 
   - task: AzureCLI@2
     displayName: Run tests
